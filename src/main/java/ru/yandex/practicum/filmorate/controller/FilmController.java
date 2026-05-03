@@ -40,7 +40,7 @@ public class FilmController {
         if (films.containsKey(newFilm.getId())) {
             Film oldFilm = films.get(newFilm.getId());
 
-            if (newFilm.getName() != null ) {
+            if (newFilm.getName() != null) {
                 oldFilm.setName(newFilm.getName());
             }
             if (newFilm.getDescription() != null) {
