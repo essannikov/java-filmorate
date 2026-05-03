@@ -6,9 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +15,8 @@ import java.util.Map;
 @RequestMapping("/films")
 @Slf4j
 public class FilmController {
-    private final int MAX_LENGTH_DESCRIPTION = 200;
-    private final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12,28);
+    private static final int MAX_LENGTH_DESCRIPTION = 200;
+    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12,28);
 
     private final Map<Long, Film> films = new HashMap<>();
 
