@@ -1,12 +1,13 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.check.OnCreate;
+import ru.yandex.practicum.filmorate.check.OnUpdate;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,24 +24,40 @@ public class UserController {
     }
 
     @PostMapping
-    public User postUser(@Valid @RequestBody User user) {
+    public User postUser(@Validated(OnCreate.class) @RequestBody User user) {
         log.info("Post user", user);
 
-        try {
-            return create(user);
-        } catch (ValidationException exception) {
-            log.error(exception.getMessage());
-            throw exception;
-        }
-    }
-
-    public User create(User user) throws ValidationException {
-        checkUser(user);
-
+        fillDefaultValues(user);
         user.setId(getNextId());
         users.put(user.getId(), user);
 
         return user;
+    }
+
+    @PutMapping
+    public User putUser(@Validated(OnUpdate.class) @RequestBody User newUser) {
+        log.info("Put user", newUser);
+
+        if (users.containsKey(newUser.getId())) {
+            User oldUser = users.get(newUser.getId());
+
+            if (newUser.getEmail() != null) {
+                oldUser.setEmail(newUser.getEmail());
+            }
+            if (newUser.getLogin() != null) {
+                oldUser.setLogin(newUser.getLogin());
+            }
+            if (newUser.getName() != null) {
+                oldUser.setName(newUser.getName());
+            }
+            if (newUser.getBirthday() != null) {
+                oldUser.setBirthday(newUser.getBirthday());
+            }
+
+            return oldUser;
+        }
+
+        throw new ValidationException("Пользователь с id = " + newUser.getId() + " не найден");
     }
 
     private long getNextId() {
@@ -52,50 +69,9 @@ public class UserController {
         return ++currentMaxId;
     }
 
-    private void checkUser(User user) throws ValidationException {
-        if (user.getEmail() == null || !user.getEmail().contains("@")) {
-            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
-        }
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-        }
+    private void fillDefaultValues(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
-        if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
-    }
-
-    @PutMapping
-    public User putUser(@Valid @RequestBody User newUser) {
-        log.info("Put user", newUser);
-
-        try {
-            return update(newUser);
-        } catch (ValidationException exception) {
-            log.error(exception.getMessage());
-            throw exception;
-        }
-    }
-
-    public User update(User newUser) throws ValidationException {
-        if (newUser.getId() == null) {
-            throw new ValidationException("Id должен быть указан");
-        }
-
-        if (users.containsKey(newUser.getId())) {
-            checkUser(newUser);
-
-            User oldUser = users.get(newUser.getId());
-            oldUser.setEmail(newUser.getEmail());
-            oldUser.setLogin(newUser.getLogin());
-            oldUser.setName(newUser.getName());
-            oldUser.setBirthday(newUser.getBirthday());
-
-            return oldUser;
-        }
-
-        throw new ValidationException("Пользователь с id = " + newUser.getId() + " не найден");
     }
 }
