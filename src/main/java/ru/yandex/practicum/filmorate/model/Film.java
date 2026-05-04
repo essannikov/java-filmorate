@@ -12,7 +12,7 @@ import java.time.LocalDate;
 public class Film {
     @NotNull(groups = {OnUpdate.class})
     private Long id;
-    @NotBlank(groups = {OnCreate.class, OnUpdate.class})
+    @NotBlank(groups = {OnCreate.class})
     private String name;
     @Size(min = 1, max = 200, groups = {OnCreate.class, OnUpdate.class})
     private String description;
