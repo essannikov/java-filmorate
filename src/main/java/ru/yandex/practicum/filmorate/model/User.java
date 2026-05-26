@@ -9,6 +9,8 @@ import ru.yandex.practicum.filmorate.check.OnCreate;
 import ru.yandex.practicum.filmorate.check.OnUpdate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class User {
@@ -21,4 +23,5 @@ public class User {
     private String name;
     @Past(groups = {OnCreate.class, OnUpdate.class})
     private LocalDate birthday;
+    private Set<Long> friends = new HashSet<>();
 }
