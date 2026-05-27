@@ -9,11 +9,20 @@ import java.util.Map;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage{
+    private long currentMaxId;
     private final Map<Long, Film> films = new HashMap<>();
 
     @Override
     public Collection<Film> getAll() {
         return films.values();
+    }
+
+    @Override
+    public Collection<Film> getPopular(Integer count) {
+        return films.values().stream()
+                .sorted((o1, o2) -> o2.getLikes().size() - o1.getLikes().size())
+                .toList()
+                .subList(0, Math.min(count, films.size()));
     }
 
     @Override
@@ -29,7 +38,7 @@ public class InMemoryFilmStorage implements FilmStorage{
     }
 
     @Override
-    public Film modify(Film newFilm) {
+    public Film update(Film newFilm) {
         if (films.containsKey(newFilm.getId())) {
             Film oldFilm = films.get(newFilm.getId());
 
@@ -57,11 +66,6 @@ public class InMemoryFilmStorage implements FilmStorage{
     }
 
     private long getNextId() {
-        long currentMaxId = films.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
         return ++currentMaxId;
     }
 }

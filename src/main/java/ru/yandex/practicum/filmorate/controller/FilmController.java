@@ -6,59 +6,38 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.check.OnCreate;
 import ru.yandex.practicum.filmorate.check.OnUpdate;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
 import java.util.Collection;
-import java.util.List;
 
 @RestController
 @RequestMapping("/films")
 @Slf4j
 @RequiredArgsConstructor
 public class FilmController {
-    private final FilmStorage filmStorage;
     private final FilmService filmService;
 
     @GetMapping
     public Collection<Film> findAll() {
-        return filmStorage.getAll();
+        return filmService.getFilmsAll();
     }
 
     @GetMapping("/{id}")
     public Film getFilm(@PathVariable Long id) {
-        if (id == null) {
-            throw new ValidationException("Не задан id фильма");
-        }
-
-        Film film = filmStorage.get(id);
-        if (film == null) {
-            throw new NotFoundException("Фильм с id = " + id + " не найден");
-        }
-
-        return film;
+        return filmService.getFilm(id);
     }
 
     @PostMapping
     public Film postFilm(@Validated(OnCreate.class) @RequestBody Film film) {
         log.info("Post film", film);
-
-        return filmStorage.add(film);
+        return filmService.addFilm(film);
     }
 
     @PutMapping
     public Film putFilm(@Validated(OnUpdate.class) @RequestBody Film newFilm) {
         log.info("Put film", newFilm);
-
-        Film modifyFilm = filmStorage.modify(newFilm);
-        if (modifyFilm == null) {
-            throw new NotFoundException("Фильм с id = " + newFilm.getId() + " не найден");
-        }
-
-        return modifyFilm;
+        return filmService.updateFilm(newFilm);
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -74,7 +53,7 @@ public class FilmController {
     }
 
     @GetMapping("/popular")
-    public List<Film> getPopular(@RequestParam Integer count) {
-        return filmService.getPopular(count);
+    public Collection<Film> getPopular(@RequestParam Integer count) {
+        return filmService.getFilmsPopular(count);
     }
 }

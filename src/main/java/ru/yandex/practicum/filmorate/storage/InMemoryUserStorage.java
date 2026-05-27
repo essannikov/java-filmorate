@@ -9,6 +9,7 @@ import java.util.Map;
 
 @Component
 public class InMemoryUserStorage implements UserStorage{
+    private long currentMaxId;
     private final Map<Long, User> users = new HashMap<>();
 
     @Override
@@ -30,7 +31,7 @@ public class InMemoryUserStorage implements UserStorage{
     }
 
     @Override
-    public User modify(User newUser) {
+    public User update(User newUser) {
         if (users.containsKey(newUser.getId())) {
             User oldUser = users.get(newUser.getId());
 
@@ -58,11 +59,6 @@ public class InMemoryUserStorage implements UserStorage{
     }
 
     private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
         return ++currentMaxId;
     }
 
