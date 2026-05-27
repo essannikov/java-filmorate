@@ -9,7 +9,7 @@ public interface UserStorage {
 
     public User get(Long id);
 
-    public User add(User User);
+    public User add(User user);
 
     public User update(User newUser);
 
