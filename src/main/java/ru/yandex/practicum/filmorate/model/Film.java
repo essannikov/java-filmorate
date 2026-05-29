@@ -7,6 +7,8 @@ import ru.yandex.practicum.filmorate.check.OnCreate;
 import ru.yandex.practicum.filmorate.check.OnUpdate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class Film {
@@ -20,4 +22,5 @@ public class Film {
     private LocalDate releaseDate;
     @Positive(groups = {OnCreate.class, OnUpdate.class})
     private Long duration;
+    private Set<Long> likes = new HashSet<>();
 }
