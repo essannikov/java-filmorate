@@ -21,8 +21,8 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Collection<Film> getPopular(Integer count) {
         return films.values().stream()
                 .sorted((o1, o2) -> o2.getLikes().size() - o1.getLikes().size())
-                .toList()
-                .subList(0, Math.min(count, films.size()));
+                .limit(Math.min(count, films.size()))
+                .toList();
     }
 
     @Override
