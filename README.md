@@ -1,2 +1,9 @@
 # java-filmorate
-Template repository for Filmorate project.
+
+Модель данных состоит из 
+таблиц User, Film, 
+справочников Film_rating, Genre и
+таблиц связей Friends, Likes, Film_genre.
+
+![ER модель](Schema.png)
+
