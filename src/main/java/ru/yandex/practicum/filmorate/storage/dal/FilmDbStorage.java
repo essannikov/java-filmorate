@@ -46,14 +46,20 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public Collection<Film> getAll() {
         Collection<Film> films = findMany(FIND_ALL_QUERY);
-        films.forEach(film -> {readMpa(film); readGenres(film);});
+        films.forEach(film -> {
+            readMpa(film);
+            readGenres(film);
+        });
         return films;
     }
 
     @Override
     public Collection<Film> getPopular(Integer count) {
         Collection<Film> films = findMany(FIND_POPULAR_QUERY, count);
-        films.forEach(film -> {readMpa(film); readGenres(film);});
+        films.forEach(film -> {
+            readMpa(film);
+            readGenres(film);
+        });
         return films;
     }
 
