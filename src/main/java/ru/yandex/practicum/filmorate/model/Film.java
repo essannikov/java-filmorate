@@ -22,5 +22,7 @@ public class Film {
     private LocalDate releaseDate;
     @Positive(groups = {OnCreate.class, OnUpdate.class})
     private Long duration;
+    private Mpa mpa;
     private Set<Long> likes = new HashSet<>();
+    private Set<Genre> genres = new HashSet<>();
 }

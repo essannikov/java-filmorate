@@ -1,23 +1,34 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Like;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.*;
 
 import java.util.Collection;
 
 @Service
-@RequiredArgsConstructor
 public class FilmService {
     private static final int FILMS_POPULAR_COUNT_DEFAULT = 10;
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final LikeStorage likeStorage;
+    private final FilmGenreStorage filmGenreStorage;
+
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("userDbStorage") UserStorage userStorage,
+                       @Qualifier("likeDbStorage") LikeStorage likeStorage,
+                       @Qualifier("filmGenreDbStorage") FilmGenreStorage filmGenreStorage) {
+        this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
+        this.likeStorage = likeStorage;
+        this.filmGenreStorage = filmGenreStorage;
+    }
 
     public Collection<Film> getFilmsAll() {
         return filmStorage.getAll();
@@ -62,7 +73,10 @@ public class FilmService {
         checkFilm(film, id);
         checkUser(user, userId);
 
-        return film.getLikes().add(userId);
+        Like like = new Like();
+        like.setFilmId(id);
+        like.setUserId(userId);
+        return likeStorage.add(like) != null;
     }
 
     public boolean deleteLike(Long id, Long userId) {
@@ -75,7 +89,7 @@ public class FilmService {
         checkFilm(film, id);
         checkUser(user, userId);
 
-        return film.getLikes().remove(userId);
+        return likeStorage.delete(id, userId) != null;
     }
 
     protected void checkFilmId(Long id) {

@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Friend;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FriendStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
@@ -12,9 +14,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+    private final FriendStorage friendStorage;
+
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage,
+                       @Qualifier("friendDbStorage") FriendStorage friendStorage) {
+        this.userStorage = userStorage;
+        this.friendStorage = friendStorage;
+    }
 
     public Collection<User> getUserAll() {
         return userStorage.getAll();
@@ -33,6 +41,7 @@ public class UserService {
     }
 
     public User updateUser(User newUser) {
+        checkUserId(newUser.getId());
         User userUpdate = userStorage.update(newUser);
         checkUser(userUpdate, newUser.getId());
 
@@ -49,7 +58,10 @@ public class UserService {
         checkUser(user, id);
         checkUser(friendUser, friendId);
 
-        return user.getFriends().add(friendId) && friendUser.getFriends().add(id);
+        Friend friend = new Friend();
+        friend.setUserId(id);
+        friend.setFriendId(friendId);
+        return friendStorage.add(friend) != null;
     }
 
     public boolean deleteFriend(Long id, Long friendId) {
@@ -62,7 +74,7 @@ public class UserService {
         checkUser(user, id);
         checkUser(friendUser, friendId);
 
-        return user.getFriends().remove(friendId) && friendUser.getFriends().remove(id);
+        return friendStorage.delete(id, friendId) != null;
     }
 
     public Collection<User> getFriends(Long id) {
@@ -70,7 +82,7 @@ public class UserService {
         User user = userStorage.get(id);
         checkUser(user, id);
 
-        return user.getFriends().stream().map(userStorage::get).toList();
+        return friendStorage.getAll(id).stream().map(friend -> userStorage.get(friend.getFriendId())).toList();
     }
 
     public Collection<User> getCommonFriends(Long id, Long otherId) {
@@ -83,8 +95,10 @@ public class UserService {
         checkUser(user, id);
         checkUser(otherUser, otherId);
 
-        Set<User> userFriends = user.getFriends().stream().map(userStorage::get).collect(Collectors.toSet());
-        Set<User> otherUserFriends = otherUser.getFriends().stream().map(userStorage::get).collect(Collectors.toSet());
+        Set<User> userFriends = friendStorage.getAll(id).stream()
+                .map(friend -> userStorage.get(friend.getFriendId())).collect(Collectors.toSet());
+        Set<User> otherUserFriends = friendStorage.getAll(otherId).stream()
+                .map(friend -> userStorage.get(friend.getFriendId())).collect(Collectors.toSet());
         userFriends.retainAll(otherUserFriends);
 
         return userFriends;
