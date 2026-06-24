@@ -8,16 +8,19 @@ import ru.yandex.practicum.filmorate.storage.dal.mappers.LikeRowMapper;
 
 import java.util.Collection;
 
-@Repository("likeDbStorage")
+@Repository
 public class LikeDbStorage extends BaseDbStorage<Like> implements LikeStorage {
-    private static final String FIND_ALL_LIKES_QUERY = "SELECT * FROM likes WHERE film_id = ?";
+    private static final String FIND_ALL_LIKES_QUERY =
+            "SELECT * FROM likes WHERE film_id = ?";
     private static final String FIND_BY_ID_QUERY =
             "SELECT * FROM likes WHERE film_id = ? AND user_id = ?";
     private static final String INSERT_QUERY =
             "INSERT INTO likes(film_id, user_id) " +
                     "VALUES (?, ?)";
-    private static final String DELETE_QUERY = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
-    private static final String DELETE_QUERY_ALL = "DELETE FROM likes";
+    private static final String DELETE_QUERY =
+            "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
+    private static final String DELETE_QUERY_ALL =
+            "DELETE FROM likes";
 
     public LikeDbStorage(JdbcTemplate jdbc, LikeRowMapper mapper) {
         super(jdbc, mapper, Like.class);

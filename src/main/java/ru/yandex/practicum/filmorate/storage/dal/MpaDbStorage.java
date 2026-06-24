@@ -9,9 +9,10 @@ import ru.yandex.practicum.filmorate.storage.dal.mappers.MpaRowMapper;
 import java.util.Collection;
 
 
-@Repository("mpaDbStorage")
+@Repository
 public class MpaDbStorage extends BaseDbStorage<Mpa> implements MpaStorage {
-    private static final String FIND_ALL_QUERY = "SELECT * FROM mpa";
+    private static final String FIND_ALL_QUERY =
+            "SELECT * FROM mpa";
     private static final String FIND_BY_ID_QUERY =
             "SELECT * FROM mpa WHERE id = ?";
 

@@ -8,9 +8,10 @@ import ru.yandex.practicum.filmorate.storage.dal.mappers.FriendRowMapper;
 
 import java.util.Collection;
 
-@Repository("friendDbStorage")
+@Repository
 public class FriendDbStorage extends BaseDbStorage<Friend> implements FriendStorage {
-    private static final String FIND_ALL_FRIEND_QUERY = "SELECT * FROM friends WHERE user_id = ?";
+    private static final String FIND_ALL_FRIEND_QUERY =
+            "SELECT * FROM friends WHERE user_id = ?";
     private static final String FIND_BY_USER_FRIEND_QUERY =
             "SELECT * FROM friends WHERE user_id = ? AND friend_id = ?";
     private static final String INSERT_QUERY =
@@ -18,7 +19,8 @@ public class FriendDbStorage extends BaseDbStorage<Friend> implements FriendStor
                     "VALUES (?, ?)";
     private static final String DELETE_QUERY =
             "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-    private static final String DELETE_QUERY_ALL = "DELETE FROM friends";
+    private static final String DELETE_QUERY_ALL =
+            "DELETE FROM friends";
 
     public FriendDbStorage(JdbcTemplate jdbc, FriendRowMapper mapper) {
         super(jdbc, mapper, Friend.class);

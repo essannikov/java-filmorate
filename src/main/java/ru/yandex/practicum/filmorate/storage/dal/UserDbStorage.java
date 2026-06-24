@@ -7,19 +7,26 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 import ru.yandex.practicum.filmorate.storage.dal.mappers.UserRowMapper;
 
 import java.util.Collection;
+import java.util.Set;
 
-@Repository("userDbStorage")
+@Repository
 public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
-    private static final String FIND_BY_ID_QUERY = "SELECT * FROM users WHERE id = ?";
-    private static final String FIND_ALL_QUERY = "SELECT * FROM users";
+    private static final String FIND_ALL_QUERY =
+            "SELECT * FROM users";
+    private static final String FIND_ALL_IN_RANGE_QUERY =
+            "SELECT * FROM users WHERE id IN (:idSet)";
+    private static final String FIND_BY_ID_QUERY =
+            "SELECT * FROM users WHERE id = ?";
     private static final String INSERT_QUERY =
             "INSERT INTO users(email, login, name, birthday) " +
                     "VALUES (?, ?, ?, ?)";
     private static final String UPDATE_QUERY =
             "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? " +
                     "WHERE id = ?";
-    private static final String DELETE_QUERY = "DELETE FROM users WHERE id = ?";
-    private static final String DELETE_QUERY_ALL = "DELETE FROM users";
+    private static final String DELETE_QUERY =
+            "DELETE FROM users WHERE id = ?";
+    private static final String DELETE_QUERY_ALL =
+            "DELETE FROM users";
 
     public UserDbStorage(JdbcTemplate jdbc, UserRowMapper mapper) {
         super(jdbc, mapper, User.class);
@@ -28,6 +35,11 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
     @Override
     public Collection<User> getAll() {
         return findMany(FIND_ALL_QUERY);
+    }
+
+    @Override
+    public Collection<User> getAllInRange(Set<Long> idSet) {
+        return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
     }
 
     @Override

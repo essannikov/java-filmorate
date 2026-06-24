@@ -8,9 +8,10 @@ import ru.yandex.practicum.filmorate.storage.dal.mappers.GenreRowMapper;
 
 import java.util.Collection;
 
-@Repository("genreDbStorage")
+@Repository
 public class GenreDbStorage extends BaseDbStorage<Genre> implements GenreStorage {
-    private static final String FIND_ALL_QUERY = "SELECT * FROM genres";
+    private static final String FIND_ALL_QUERY =
+            "SELECT * FROM genres";
     private static final String FIND_BY_ID_QUERY =
             "SELECT * FROM genres WHERE id = ?";
 

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
 
@@ -12,12 +14,13 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @RequiredArgsConstructor
-public class BaseDbStorage<T> {
+public abstract class BaseDbStorage<T> {
     protected final JdbcTemplate jdbc;
     protected final RowMapper<T> mapper;
-    private final Class<T> entityType;
+    protected final Class<T> entityType;
 
     protected Optional<T> findOne(String query, Object... params) {
         try {
@@ -31,6 +34,22 @@ public class BaseDbStorage<T> {
     protected List<T> findMany(String query, Object... params) {
         try {
             return jdbc.query(query, mapper, params);
+        } catch (EmptyResultDataAccessException ignored) {
+            return new ArrayList<>();
+        }
+    }
+
+    public <P> List<T> findManyInRange(String query, Set<P> values, String paramName) {
+        if (values == null || values.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        NamedParameterJdbcTemplate namedTemplate = new NamedParameterJdbcTemplate(jdbc);
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue(paramName, values);
+
+        try {
+            return namedTemplate.query(query, parameters, mapper);
         } catch (EmptyResultDataAccessException ignored) {
             return new ArrayList<>();
         }
