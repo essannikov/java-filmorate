@@ -9,8 +9,8 @@ import ru.yandex.practicum.filmorate.storage.*;
 import ru.yandex.practicum.filmorate.storage.dal.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.dal.MpaDbStorage;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -137,32 +137,38 @@ public class FilmService {
     }
 
     protected void checkGenre(Film film) {
-        List<Genre> genreList = genreStorage.getAll().stream().toList();
+        Map<Long, Genre> genreMap = genreStorage.getAllInRange(
+                film.getGenres().stream().map(Genre::getId).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.toMap(Genre::getId, Function.identity()));
 
         for (Genre genre: film.getGenres()) {
-            genreList.stream()
-                    .filter(g -> g.getId().equals(genre.getId()))
-                    .findFirst()
-                    .orElseThrow(() ->
-                            new NotFoundException(String.format("Жанр с id = %d не найден", genre.getId())));
+            if (genreMap.get(genre.getId()) == null) {
+                throw new NotFoundException(String.format("Жанр с id = %d не найден", genre.getId()));
+            }
         }
     }
 
     protected void readGenres(Collection<Film> films) {
-        List<FilmGenre> filmGenreList = filmGenreStorage.getAllInRange(
+        Map<Long, Set<Long>> filmGenreMap = filmGenreStorage.getAllInRange(
                 films.stream().map(Film::getId).collect(Collectors.toSet()))
-                .stream().toList();
-        List<Genre> genreList = genreStorage.getAll().stream().toList();
+                .stream().collect(
+                        Collectors.groupingBy(FilmGenre::getFilmId,
+                                Collectors.mapping(FilmGenre::getGenreId, Collectors.toSet())));
+
+        Map<Long, Genre> genreMap = genreStorage.getAllInRange(
+                filmGenreMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.toMap(Genre::getId, Function.identity()));
 
         films.forEach(film -> {
-            film.setGenres(
-                    filmGenreList.stream()
-                            .filter(filmGenre -> filmGenre.getFilmId().equals(film.getId()))
-                            .map(filmGenre -> genreList.stream()
-                                    .filter(genre -> genre.getId().equals(filmGenre.getGenreId()))
-                                    .findFirst().orElse(null))
-                            .collect(Collectors.toSet())
-            );
+            Set<Long> genreIdSet = filmGenreMap.get(film.getId());
+            if (genreIdSet != null) {
+                film.setGenres(
+                        genreIdSet.stream().map(genreMap::get).filter(Objects::nonNull)
+                                .collect(Collectors.toSet())
+                );
+            }
         });
     }
 

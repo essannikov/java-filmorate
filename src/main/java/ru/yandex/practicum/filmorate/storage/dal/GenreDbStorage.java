@@ -7,11 +7,14 @@ import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.dal.mappers.GenreRowMapper;
 
 import java.util.Collection;
+import java.util.Set;
 
 @Repository
 public class GenreDbStorage extends BaseDbStorage<Genre> implements GenreStorage {
     private static final String FIND_ALL_QUERY =
             "SELECT * FROM genres";
+    private static final String FIND_ALL_IN_RANGE_QUERY =
+            "SELECT * FROM genres WHERE id IN (:idSet)";
     private static final String FIND_BY_ID_QUERY =
             "SELECT * FROM genres WHERE id = ?";
 
@@ -22,6 +25,11 @@ public class GenreDbStorage extends BaseDbStorage<Genre> implements GenreStorage
     @Override
     public Collection<Genre> getAll() {
         return findMany(FIND_ALL_QUERY);
+    }
+
+    @Override
+    public Collection<Genre> getAllInRange(Set<Long> idSet) {
+        return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
     }
 
     @Override
