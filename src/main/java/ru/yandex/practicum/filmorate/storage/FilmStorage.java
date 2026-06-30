@@ -16,4 +16,6 @@ public interface FilmStorage {
     public Film update(Film newFilm);
 
     public Film delete(Long id);
+
+    public boolean deleteAll();
 }

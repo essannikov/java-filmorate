@@ -4,12 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.storage.*;
+import ru.yandex.practicum.filmorate.storage.dal.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.dal.MpaDbStorage;
 
-import java.util.Collection;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,19 +20,28 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final LikeStorage likeStorage;
+    private final FilmGenreStorage filmGenreStorage;
+    private final MpaDbStorage mpaStorage;
+    private final GenreDbStorage genreStorage;
 
     public Collection<Film> getFilmsAll() {
-        return filmStorage.getAll();
+        Collection<Film> films = filmStorage.getAll();
+        readGenres(films);
+
+        return films;
     }
 
     public Collection<Film> getFilmsPopular(Integer count) {
         int toIndex = FILMS_POPULAR_COUNT_DEFAULT;
-
         if (count != null && count > 0) {
             toIndex = count;
         }
 
-        return filmStorage.getPopular(toIndex);
+        Collection<Film> films = filmStorage.getPopular(toIndex);
+        readGenres(films);
+
+        return films;
     }
 
     public Film getFilm(Long id) {
@@ -38,18 +49,32 @@ public class FilmService {
         Film film = filmStorage.get(id);
         checkFilm(film, id);
 
+        readGenres(List.of(film));
+
         return film;
     }
 
     public Film addFilm(Film film) {
-        return filmStorage.add(film);
+        checkMpa(film);
+        checkGenre(film);
+
+        film = filmStorage.add(film);
+        updateGenres(film);
+
+        return film;
     }
 
     public Film updateFilm(Film newFilm) {
+        checkMpa(newFilm);
+        checkGenre(newFilm);
+
         Film filmUpdate = filmStorage.update(newFilm);
         checkFilm(filmUpdate, newFilm.getId());
 
-        return filmUpdate;
+        deleteGenres(newFilm);
+        updateGenres(newFilm);
+
+        return newFilm;
     }
 
     public boolean addLike(Long id, Long userId) {
@@ -62,7 +87,10 @@ public class FilmService {
         checkFilm(film, id);
         checkUser(user, userId);
 
-        return film.getLikes().add(userId);
+        Like like = new Like();
+        like.setFilmId(id);
+        like.setUserId(userId);
+        return likeStorage.add(like) != null;
     }
 
     public boolean deleteLike(Long id, Long userId) {
@@ -75,7 +103,7 @@ public class FilmService {
         checkFilm(film, id);
         checkUser(user, userId);
 
-        return film.getLikes().remove(userId);
+        return likeStorage.delete(id, userId) != null;
     }
 
     protected void checkFilmId(Long id) {
@@ -100,5 +128,60 @@ public class FilmService {
         if (user == null) {
             throw new NotFoundException(String.format("Пользователь с id = %d не найден", id));
         }
+    }
+
+    protected void checkMpa(Film film) {
+        if (mpaStorage.get(film.getMpa().getId()) == null) {
+            throw new NotFoundException(String.format("MPA с id = %d не найден", film.getMpa().getId()));
+        }
+    }
+
+    protected void checkGenre(Film film) {
+        Map<Long, Genre> genreMap = genreStorage.getAllInRange(
+                film.getGenres().stream().map(Genre::getId).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.toMap(Genre::getId, Function.identity()));
+
+        for (Genre genre: film.getGenres()) {
+            if (genreMap.get(genre.getId()) == null) {
+                throw new NotFoundException(String.format("Жанр с id = %d не найден", genre.getId()));
+            }
+        }
+    }
+
+    protected void readGenres(Collection<Film> films) {
+        Map<Long, Set<Long>> filmGenreMap = filmGenreStorage.getAllInRange(
+                films.stream().map(Film::getId).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.groupingBy(FilmGenre::getFilmId,
+                                Collectors.mapping(FilmGenre::getGenreId, Collectors.toSet())));
+
+        Map<Long, Genre> genreMap = genreStorage.getAllInRange(
+                filmGenreMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.toMap(Genre::getId, Function.identity()));
+
+        films.forEach(film -> {
+            Set<Long> genreIdSet = filmGenreMap.get(film.getId());
+            if (genreIdSet != null) {
+                film.setGenres(
+                        genreIdSet.stream().map(genreMap::get).filter(Objects::nonNull)
+                                .collect(Collectors.toSet())
+                );
+            }
+        });
+    }
+
+    protected void updateGenres(Film film) {
+        for (Genre genre : film.getGenres()) {
+            FilmGenre filmGenre = new FilmGenre();
+            filmGenre.setFilmId(film.getId());
+            filmGenre.setGenreId(genre.getId());
+            filmGenreStorage.add(filmGenre);
+        }
+    }
+
+    protected void deleteGenres(Film film) {
+        filmGenreStorage.deleteAllByFilmId(film.getId());
     }
 }
