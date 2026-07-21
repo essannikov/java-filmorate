@@ -30,7 +30,7 @@ public class UserService {
         User user = userStorage.get(id);
         checkUser(user, id);
 
-        return userStorage.get(id);
+        return user;
     }
 
     public User addUser(User user) {
