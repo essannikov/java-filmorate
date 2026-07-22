@@ -38,6 +38,12 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     private static final String DELETE_QUERY = "DELETE FROM films WHERE id = ?";
     private static final String DELETE_QUERY_ALL = "DELETE FROM films";
 
+    private static final String FIND_ALL_IN_RANGE_QUERY =
+            "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME " +
+                    "FROM films AS f " +
+                    "LEFT OUTER JOIN mpa AS m ON m.ID = f.MPA_ID " +
+                    "WHERE f.ID IN (:idSet)";
+
     public FilmDbStorage(JdbcTemplate jdbc, FilmRowMapper mapper) {
         super(jdbc, mapper, Film.class);
     }
@@ -87,5 +93,10 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public boolean deleteAll() {
         return deleteAll(DELETE_QUERY_ALL);
+    }
+
+    @Override
+    public Collection<Film> getAllInRange(Set<Long> idSet) {
+        return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
     }
 }

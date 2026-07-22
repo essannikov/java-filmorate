@@ -14,6 +14,14 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.model.FilmDirector;
+import ru.yandex.practicum.filmorate.storage.DirectorStorage;
+import ru.yandex.practicum.filmorate.storage.FilmDirectorStorage;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+
 @Service
 @RequiredArgsConstructor
 public class FilmService {
@@ -25,10 +33,14 @@ public class FilmService {
     private final FilmGenreStorage filmGenreStorage;
     private final MpaDbStorage mpaStorage;
     private final GenreDbStorage genreStorage;
+    private final DirectorStorage directorStorage;
+    private final FilmDirectorStorage filmDirectorStorage;
+
 
     public Collection<Film> getFilmsAll() {
         Collection<Film> films = filmStorage.getAll();
         readGenres(films);
+        readDirectors(films);
 
         return films;
     }
@@ -41,6 +53,7 @@ public class FilmService {
 
         Collection<Film> films = filmStorage.getPopular(toIndex);
         readGenres(films);
+        readDirectors(films);
 
         return films;
     }
@@ -51,6 +64,7 @@ public class FilmService {
         checkFilm(film, id);
 
         readGenres(List.of(film));
+        readDirectors(List.of(film));
 
         return film;
     }
@@ -58,9 +72,11 @@ public class FilmService {
     public Film addFilm(Film film) {
         checkMpa(film);
         checkGenre(film);
+        checkDirector(film);
 
         film = filmStorage.add(film);
         updateGenres(film);
+        updateDirectors(film);
 
         return film;
     }
@@ -68,12 +84,14 @@ public class FilmService {
     public Film updateFilm(Film newFilm) {
         checkMpa(newFilm);
         checkGenre(newFilm);
+        checkDirector(newFilm);
 
         Film filmUpdate = filmStorage.update(newFilm);
         checkFilm(filmUpdate, newFilm.getId());
 
         deleteGenres(newFilm);
         updateGenres(newFilm);
+        updateDirectors(newFilm);
 
         return newFilm;
     }
@@ -186,16 +204,93 @@ public class FilmService {
         filmGenreStorage.deleteAllByFilmId(film.getId());
     }
 
-    public Film deleteFilm(Long id) {
-        checkFilmId(id);
-        Film film = filmStorage.get(id);
-        checkFilm(film, id);
-
-        Film deletedFilm = filmStorage.delete(id);
-        if (deletedFilm == null) {
-            throw new NotFoundException(String.format("Не удалось удалить фильм с id = %d", id));
+    protected void checkDirector(Film film) {
+        if (film.getDirectors() == null || film.getDirectors().isEmpty()) {
+            return;
         }
 
-        return deletedFilm;
+        Map<Long, Director> directorMap = directorStorage.getAllInRange(
+                        film.getDirectors().stream().map(Director::getId).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.toMap(Director::getId, Function.identity()));
+
+        for (Director director : film.getDirectors()) {
+            if (directorMap.get(director.getId()) == null) {
+                throw new NotFoundException(String.format("Режиссер с id = %d не найден", director.getId()));
+            }
+        }
+    }
+
+    protected void readDirectors(Collection<Film> films) {
+        Map<Long, Set<Long>> filmDirectorMap = filmDirectorStorage.getAllInRange(
+                        films.stream().map(Film::getId).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.groupingBy(FilmDirector::getFilmId,
+                                Collectors.mapping(FilmDirector::getDirectorId, Collectors.toSet())));
+
+        Map<Long, Director> directorMap = directorStorage.getAllInRange(
+                        filmDirectorMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()))
+                .stream().collect(
+                        Collectors.toMap(Director::getId, Function.identity()));
+
+        films.forEach(film -> {
+            Set<Long> directorIdSet = filmDirectorMap.get(film.getId());
+            if (directorIdSet != null) {
+                film.setDirectors(
+                        directorIdSet.stream().map(directorMap::get).filter(Objects::nonNull)
+                                .collect(Collectors.toSet())
+                );
+            }
+        });
+    }
+
+    protected void updateDirectors(Film film) {
+        if (film.getDirectors() == null) {
+            return;
+        }
+        for (Director director : film.getDirectors()) {
+            FilmDirector filmDirector = new FilmDirector();
+            filmDirector.setFilmId(film.getId());
+            filmDirector.setDirectorId(director.getId());
+            filmDirectorStorage.add(filmDirector);
+        }
+    }
+
+    protected void deleteDirectors(Film film) {
+        filmDirectorStorage.deleteAllByFilmId(film.getId());
+    }
+
+    public Collection<Film> getFilmsByDirector(Long directorId, String sortBy) {
+
+        if (directorStorage.get(directorId) == null) {
+            throw new NotFoundException(String.format("Режиссер с id = %d не найден", directorId));
+        }
+
+        Collection<Long> filmIds = filmDirectorStorage.getFilmIdsByDirectorId(directorId);
+
+        if (filmIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Collection<Film> films = filmStorage.getAllInRange(new HashSet<>(filmIds));  // ЭТА СТРОКА
+
+        readGenres(films);
+        readDirectors(films);
+
+        if ("year".equalsIgnoreCase(sortBy)) {
+            return films.stream()
+                    .sorted(Comparator.comparing(Film::getReleaseDate))
+                    .collect(Collectors.toList());
+        } else if ("likes".equalsIgnoreCase(sortBy)) {
+            return films.stream()
+                    .sorted((f1, f2) -> {
+                        int likes1 = likeStorage.getAll(f1.getId()).size();
+                        int likes2 = likeStorage.getAll(f2.getId()).size();
+                        return Integer.compare(likes2, likes1);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            throw new ValidationException("Некорректный параметр sortBy. Допустимые значения: year, likes");
+        }
     }
 }
