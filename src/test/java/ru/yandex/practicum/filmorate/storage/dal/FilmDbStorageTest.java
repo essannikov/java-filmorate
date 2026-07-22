@@ -12,6 +12,9 @@ import ru.yandex.practicum.filmorate.storage.FilmGenreStorage;
 import java.util.Collection;
 import ru.yandex.practicum.filmorate.model.FilmGenre;
 import ru.yandex.practicum.filmorate.model.Like;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.Like;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

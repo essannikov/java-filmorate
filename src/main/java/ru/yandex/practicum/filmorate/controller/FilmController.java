@@ -60,4 +60,10 @@ public class FilmController {
         log.info("Получить популярные фильмы: count={}, genreId={}, year={}", count, genreId, year);
         return filmService.getFilmsPopular(count, genreId, year);
     }
+
+    @DeleteMapping("/{filmId}")
+    public Film deleteFilm(@PathVariable Long filmId) {
+        log.info("Delete film with id = {}", filmId);
+        return filmService.deleteFilm(filmId);
+    }
 }

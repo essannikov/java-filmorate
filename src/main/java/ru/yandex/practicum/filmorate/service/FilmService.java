@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.storage.*;
 import ru.yandex.practicum.filmorate.storage.dal.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.dal.MpaDbStorage;
 
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -182,5 +183,18 @@ public class FilmService {
 
     protected void deleteGenres(Film film) {
         filmGenreStorage.deleteAllByFilmId(film.getId());
+    }
+
+    public Film deleteFilm(Long id) {
+        checkFilmId(id);
+        Film film = filmStorage.get(id);
+        checkFilm(film, id);
+
+        Film deletedFilm = filmStorage.delete(id);
+        if (deletedFilm == null) {
+            throw new NotFoundException(String.format("Не удалось удалить фильм с id = %d", id));
+        }
+
+        return deletedFilm;
     }
 }
