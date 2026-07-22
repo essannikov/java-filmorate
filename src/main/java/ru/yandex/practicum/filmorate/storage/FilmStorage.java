@@ -3,11 +3,14 @@ package ru.yandex.practicum.filmorate.storage;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.Collection;
+import java.util.Set;
 
 public interface FilmStorage {
     public Collection<Film> getAll();
 
     public Collection<Film> getPopular(Integer count);
+
+    public Collection<Film> search(String query, Set<String> by);
 
     public Film get(Long id);
 

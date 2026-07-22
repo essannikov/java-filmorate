@@ -29,6 +29,14 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                     "GROUP BY f.ID , f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME " +
                     "ORDER BY COUNT(ls.USER_ID) DESC " +
                     "LIMIT ?";
+    private static final String SEARCH_BASE_QUERY =
+            "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME, COUNT(ls.USER_ID) AS count_likes " +
+                    "FROM films AS f " +
+                    "LEFT OUTER JOIN mpa AS m ON m.ID = f.MPA_ID " +
+                    "LEFT OUTER JOIN likes AS ls ON ls.FILM_ID = f.ID ";
+    private static final String SEARCH_GROUP_ORDER =
+            "GROUP BY f.ID , f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME " +
+                    "ORDER BY COUNT(ls.USER_ID) DESC ";
     private static final String INSERT_QUERY =
             "INSERT INTO films(name, description, release_date, duration, mpa_id) " +
             "VALUES (?, ?, ?, ?, ?)";
@@ -50,6 +58,27 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public Collection<Film> getPopular(Integer count) {
         return findMany(FIND_POPULAR_QUERY, count);
+    }
+
+    @Override
+    public Collection<Film> search(String query, Set<String> by) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.NAME) LIKE LOWER(CONCAT('%', ?, '%'))");
+            params.add(query);
+        }
+
+        if (conditions.isEmpty()) {
+            return List.of();
+        }
+
+        String sql = SEARCH_BASE_QUERY +
+                "WHERE " + String.join(" OR ", conditions) + " " +
+                SEARCH_GROUP_ORDER;
+
+        return findMany(sql, params.toArray());
     }
 
     @Override

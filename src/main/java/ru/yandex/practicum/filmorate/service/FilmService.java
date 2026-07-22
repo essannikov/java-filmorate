@@ -44,6 +44,22 @@ public class FilmService {
         return films;
     }
 
+    public Collection<Film> searchFilms(String query, String by) {
+        if (query == null || query.isBlank()) {
+            throw new ValidationException("Не задан текст для поиска");
+        }
+
+        Set<String> criteria = Arrays.stream(by.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        Collection<Film> films = filmStorage.search(query, criteria);
+        readGenres(films);
+
+        return films;
+    }
+
     public Film getFilm(Long id) {
         checkFilmId(id);
         Film film = filmStorage.get(id);
