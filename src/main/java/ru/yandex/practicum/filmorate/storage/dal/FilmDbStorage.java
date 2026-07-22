@@ -5,11 +5,13 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.dal.mappers.FilmRowMapper;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.*;
 
 @Repository
 public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
+
     private static final String FIND_BY_ID_QUERY =
             "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME " +
             "FROM films AS f " +
@@ -48,10 +50,41 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     }
 
     @Override
-    public Collection<Film> getPopular(Integer count) {
-        return findMany(FIND_POPULAR_QUERY, count);
-    }
+    public Collection<Film> getPopular(Integer count, Long genreId, Integer year) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME, COUNT(ls.USER_ID) AS count_likes " +
+                        "FROM films AS f " +
+                        "LEFT OUTER JOIN mpa AS m ON m.ID = f.MPA_ID " +
+                        "LEFT OUTER JOIN likes AS ls ON ls.FILM_ID = f.ID "
+        );
 
+        List<Object> params = new ArrayList<>();
+        List<String> conditions = new ArrayList<>();
+
+        //  жанр
+        if (genreId != null) {
+            sql.append("LEFT OUTER JOIN film_genre AS fg ON fg.film_id = f.id ");
+            conditions.add("fg.genre_id = ?");
+            params.add(genreId);
+        }
+
+        // год
+        if (year != null) {
+            conditions.add("YEAR(f.release_date) = ?");
+            params.add(year);
+        }
+
+        if (!conditions.isEmpty()) {
+            sql.append("WHERE ").append(String.join(" AND ", conditions));
+        }
+
+        sql.append("GROUP BY f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME ");
+        sql.append("ORDER BY COUNT(ls.USER_ID) DESC ");
+        sql.append("LIMIT ?");
+        params.add(count);
+
+        return findMany(sql.toString(), params.toArray());
+    }
     @Override
     public Film get(Long id) {
         return findOne(FIND_BY_ID_QUERY, id).orElse(null);

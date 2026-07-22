@@ -7,7 +7,7 @@ import java.util.Collection;
 public interface FilmStorage {
     public Collection<Film> getAll();
 
-    public Collection<Film> getPopular(Integer count);
+    public Collection<Film> getPopular(Integer count, Long genreId, Integer year);
 
     public Film get(Long id);
 

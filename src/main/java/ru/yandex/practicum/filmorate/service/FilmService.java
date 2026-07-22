@@ -32,15 +32,14 @@ public class FilmService {
         return films;
     }
 
-    public Collection<Film> getFilmsPopular(Integer count) {
-        int toIndex = FILMS_POPULAR_COUNT_DEFAULT;
+    public Collection<Film> getFilmsPopular(Integer count, Long genreId, Integer year) {
+        int limit = FILMS_POPULAR_COUNT_DEFAULT;
         if (count != null && count > 0) {
-            toIndex = count;
+            limit = count;
         }
 
-        Collection<Film> films = filmStorage.getPopular(toIndex);
+        Collection<Film> films = filmStorage.getPopular(limit, genreId, year);
         readGenres(films);
-
         return films;
     }
 
