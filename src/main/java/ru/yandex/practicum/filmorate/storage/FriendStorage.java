@@ -14,4 +14,6 @@ public interface FriendStorage {
     public Friend delete(Long userId, Long friendId);
 
     public boolean deleteAll();
+
+    public boolean deleteFriends(Long userId);
 }

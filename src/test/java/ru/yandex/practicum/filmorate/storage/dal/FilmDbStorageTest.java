@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.Like;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,6 +26,11 @@ public class FilmDbStorageTest {
     private final FilmDbStorage filmStorage;
     private final MpaDbStorage mpaStorage;
     private Film film;
+
+    @Autowired
+    private UserDbStorage userStorage;
+    @Autowired
+    private LikeDbStorage likeStorage;
 
     @BeforeEach
     public void beforeEach() {
@@ -103,5 +110,42 @@ public class FilmDbStorageTest {
 
         assertNotNull(filmListDb, "Films not found");
         assertThat(filmListDb).containsExactlyElementsOf(filmList);
+    }
+
+    @Test
+    public void testDeleteFilmWithLikes() {
+        // Шаг 1. Создаем пользователя
+        User user = new User();
+        user.setEmail("user@mail.ru");
+        user.setLogin("login");
+        user.setName("name");
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+        userStorage.add(user);
+
+        // Шаг 2. Создаем фильм
+        Film film = new Film();
+        film.setName("Film for delete");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(100L);
+        film.setMpa(new Mpa(1L));
+        filmStorage.add(film);
+
+        // Шаг 3. Добавляем лайк
+        Like like = new Like();
+        like.setFilmId(film.getId());
+        like.setUserId(user.getId());
+        likeStorage.add(like);
+
+        // Шаг 4. Удаляем фильм
+        filmStorage.delete(film.getId());
+
+        // Шаг 5. Проверяем - фильм удален
+        Film filmDb = filmStorage.get(film.getId());
+        assertNull(filmDb, "Film should be deleted");
+
+        // Шаг 6. Проверяем - лайки удалены
+        Like likeDb = likeStorage.get(film.getId(), user.getId());
+        assertNull(likeDb, "Likes should be deleted");
     }
 }

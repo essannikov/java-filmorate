@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.model.Friend;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FriendStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -113,5 +114,21 @@ public class UserService {
         if (user == null) {
             throw new NotFoundException(String.format("Пользователь с id = %d не найден", id));
         }
+    }
+
+    @Transactional
+    public User deleteUser(Long id) {
+        checkUserId(id);
+        User user = userStorage.get(id);
+        checkUser(user, id);
+
+        friendStorage.deleteFriends(id);
+
+        User deletedUser = userStorage.delete(id);
+        if (deletedUser == null) {
+            throw new NotFoundException(String.format("Не удалось удалить пользователя с id = %d", id));
+        }
+
+        return deletedUser;
     }
 }

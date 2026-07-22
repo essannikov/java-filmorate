@@ -21,6 +21,8 @@ public class FriendDbStorage extends BaseDbStorage<Friend> implements FriendStor
             "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
     private static final String DELETE_QUERY_ALL =
             "DELETE FROM friends";
+    private static final String DELETE_FRIENDS_QUERY =
+            "DELETE FROM friends WHERE user_id = ? OR friend_id = ?";
 
     public FriendDbStorage(JdbcTemplate jdbc, FriendRowMapper mapper) {
         super(jdbc, mapper, Friend.class);
@@ -56,5 +58,10 @@ public class FriendDbStorage extends BaseDbStorage<Friend> implements FriendStor
     @Override
     public boolean deleteAll() {
         return deleteAll(DELETE_QUERY_ALL);
+    }
+
+    @Override
+    public boolean deleteFriends(Long userId) {
+        return update(DELETE_FRIENDS_QUERY, userId, userId);
     }
 }
