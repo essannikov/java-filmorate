@@ -59,4 +59,5 @@ public class FilmController {
             @RequestParam(required = false) Integer year) {
         log.info("Получить популярные фильмы: count={}, genreId={}, year={}", count, genreId, year);
         return filmService.getFilmsPopular(count, genreId, year);
-    }}
+    }
+}
