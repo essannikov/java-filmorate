@@ -85,6 +85,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
 
         return findMany(sql.toString(), params.toArray());
     }
+
     @Override
     public Film get(Long id) {
         return findOne(FIND_BY_ID_QUERY, id).orElse(null);
