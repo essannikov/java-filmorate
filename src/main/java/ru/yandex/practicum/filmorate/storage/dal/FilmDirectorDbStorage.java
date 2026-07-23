@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.storage.dal.mappers.FilmDirectorRowMapper;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Repository
 public class FilmDirectorDbStorage extends BaseDbStorage<FilmDirector> implements FilmDirectorStorage {
