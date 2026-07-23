@@ -96,6 +96,19 @@ public class FilmService {
         return newFilm;
     }
 
+    public Film deleteFilm(Long id) {
+        checkFilmId(id);
+        Film film = filmStorage.get(id);
+        checkFilm(film, id);
+
+        Film deletedFilm = filmStorage.delete(id);
+        if (deletedFilm == null) {
+            throw new NotFoundException(String.format("Не удалось удалить фильм с id = %d", id));
+        }
+
+        return deletedFilm;
+    }
+
     public boolean addLike(Long id, Long userId) {
         checkFilmId(id);
         checkUserId(userId);
