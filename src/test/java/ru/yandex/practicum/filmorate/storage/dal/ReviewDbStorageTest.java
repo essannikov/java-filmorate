@@ -63,9 +63,9 @@ public class ReviewDbStorageTest {
     @Test
     public void testCreateReview() {
         review = reviewStorage.add(review);
-        assertNotNull(review.getId(), "Review is not created");
+        assertNotNull(review.getReviewId(), "Review is not created");
 
-        Review reviewDb = reviewStorage.get(review.getId());
+        Review reviewDb = reviewStorage.get(review.getReviewId());
         assertNotNull(reviewDb, "Review not found");
         assertEquals(review, reviewDb, "Review data incorrect");
     }
@@ -73,13 +73,13 @@ public class ReviewDbStorageTest {
     @Test
     public void testUpdateReview() {
         review = reviewStorage.add(review);
-        assertNotNull(review.getId(), "Review is not created");
+        assertNotNull(review.getReviewId(), "Review is not created");
 
         review.setContent("content new");
         review.setIsPositive(false);
         reviewStorage.update(review);
 
-        Review reviewDb = reviewStorage.get(review.getId());
+        Review reviewDb = reviewStorage.get(review.getReviewId());
         assertNotNull(reviewDb, "Review not found");
         assertEquals(review, reviewDb, "Review data is incorrect");
     }
@@ -87,18 +87,18 @@ public class ReviewDbStorageTest {
     @Test
     public void testDeleteReview() {
         review = reviewStorage.add(review);
-        assertNotNull(review.getId(), "Review is not created");
+        assertNotNull(review.getReviewId(), "Review is not created");
 
-        reviewStorage.delete(review.getId());
+        reviewStorage.delete(review.getReviewId());
 
-        Review reviewDb = reviewStorage.get(review.getId());
+        Review reviewDb = reviewStorage.get(review.getReviewId());
         assertNull(reviewDb, "Review is not deleted");
     }
 
     @Test
     public void testFindReviewsByFilmId() {
         review = reviewStorage.add(review);
-        assertNotNull(review.getId(), "Review is not created");
+        assertNotNull(review.getReviewId(), "Review is not created");
 
         List<Review> reviewList = new ArrayList<>();
         reviewList.add(review);
