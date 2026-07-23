@@ -8,8 +8,7 @@ import ru.yandex.practicum.filmorate.check.OnUpdate;
 
 @Data
 public class Review {
-    @NotNull(groups = {OnUpdate.class})
-    private Long id;
+    private Long reviewId;
     @Size(min = 1, max = 1000, groups = {OnCreate.class, OnUpdate.class})
     private String content;
     @NotNull(groups = {OnCreate.class, OnUpdate.class})

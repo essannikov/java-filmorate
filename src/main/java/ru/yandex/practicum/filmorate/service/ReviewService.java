@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +29,8 @@ public class ReviewService {
         return reviewStorage.getAll();
     }
 
-    public Collection<Review> getAllByFilmId(Long filmId, Integer count) {
-        Integer countGet = (count == null) ? DEFAULT_COUNT : count;
-        return reviewStorage.getAllByFilmId(filmId, countGet);
+    public Collection<Review> getAllByFilmId(Optional<Long> filmId, Optional<Integer> count) {
+        return reviewStorage.getAllByFilmId(filmId.orElse(null), count.orElse(DEFAULT_COUNT));
     }
 
     public Review getReview(Long id) {
@@ -62,9 +62,9 @@ public class ReviewService {
         Film film = filmStorage.get(newReview.getFilmId());
         checkFilm(film, newReview.getFilmId());
 
-        checkReviewId(newReview.getId());
+        checkReviewId(newReview.getReviewId());
         Review reviewUpdate = reviewStorage.update(newReview);
-        checkReview(reviewUpdate, newReview.getId());
+        checkReview(reviewUpdate, newReview.getReviewId());
 
         return reviewUpdate;
     }
@@ -106,13 +106,17 @@ public class ReviewService {
         User user = userStorage.get(userId);
         checkUser(user, userId);
 
-        checkReviewLike(id, userId);
-
-        ReviewLike reviewLike = new ReviewLike();
-        reviewLike.setReviewId(id);
-        reviewLike.setUserId(userId);
-        reviewLike.setUseful(estimate);
-        return reviewLikeStorage.add(reviewLike) != null;
+        ReviewLike reviewLike = reviewLikeStorage.get(id, userId);
+        if (reviewLike != null) {
+            reviewLike.setUseful(estimate);
+            return reviewLikeStorage.update(reviewLike) != null;
+        } else {
+            reviewLike = new ReviewLike();
+            reviewLike.setReviewId(id);
+            reviewLike.setUserId(userId);
+            reviewLike.setUseful(estimate);
+            return reviewLikeStorage.add(reviewLike) != null;
+        }
     }
 
     protected void checkReviewId(Long id) {
@@ -148,15 +152,6 @@ public class ReviewService {
     protected void checkFilm(Film film, Long id) {
         if (film == null) {
             throw new NotFoundException(String.format("Фильм с id = %d не найден", id));
-        }
-    }
-
-    protected void checkReviewLike(Long reviewId, Long userId) {
-        ReviewLike reviewLike = reviewLikeStorage.get(reviewId, userId);
-        if (reviewLike != null) {
-            throw new NotFoundException(String.format(
-                    "Для отзыва с id = %d, пользователем с id = %d, уже существует оценка %d",
-                    reviewLike.getReviewId(), reviewLike.getUserId(), reviewLike.getUseful()));
         }
     }
 }

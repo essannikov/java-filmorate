@@ -11,19 +11,22 @@ import java.util.Collection;
 @Repository
 public class ReviewDbStorage extends BaseDbStorage<Review> implements ReviewStorage {
     private static final String FIND_BY_ID_QUERY =
-            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, SUM(rl.USEFUL) AS useful " +
+            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, " +
+                    "COALESCE(SUM(rl.USEFUL), 0) AS useful " +
                     "FROM reviews AS r " +
                     "LEFT OUTER JOIN review_like AS rl ON rl.REVIEW_ID = r.ID " +
                     "WHERE r.ID = ? " +
                     "GROUP BY r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID ";
     private static final String FIND_ALL_QUERY =
-            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, SUM(rl.USEFUL) AS useful " +
+            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, " +
+                    "COALESCE(SUM(rl.USEFUL), 0) AS useful " +
                     "FROM reviews AS r " +
                     "LEFT OUTER JOIN review_like AS rl ON rl.REVIEW_ID = r.ID " +
                     "GROUP BY r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID " +
                     "ORDER BY SUM(rl.USEFUL) DESC ";
     private static final String FIND_ALL_BY_FILM_ID =
-            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, SUM(rl.USEFUL) AS useful " +
+            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, " +
+                    "COALESCE(SUM(rl.USEFUL), 0) AS useful " +
                     "FROM reviews AS r " +
                     "LEFT OUTER JOIN review_like AS rl ON rl.REVIEW_ID = r.ID " +
                     "WHERE (? IS NULL OR r.FILM_ID = ?) " +
@@ -64,7 +67,7 @@ public class ReviewDbStorage extends BaseDbStorage<Review> implements ReviewStor
     public Review add(Review review) {
         Long id = insert(INSERT_QUERY,
                 review.getContent(), review.getIsPositive(), review.getUserId(), review.getFilmId());
-        review.setId(id);
+        review.setReviewId(id);
         return review;
     }
 
@@ -72,8 +75,8 @@ public class ReviewDbStorage extends BaseDbStorage<Review> implements ReviewStor
     public Review update(Review newReview) {
         if (update(UPDATE_QUERY,
                 newReview.getContent(), newReview.getIsPositive(), newReview.getUserId(), newReview.getFilmId(),
-                newReview.getId())) {
-            return newReview;
+                newReview.getReviewId())) {
+            return get(newReview.getReviewId());
         }
         return null;
     }
