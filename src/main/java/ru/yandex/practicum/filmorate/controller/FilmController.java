@@ -28,6 +28,14 @@ public class FilmController {
         return filmService.getFilm(id);
     }
 
+    @GetMapping("/director/{directorId}")
+    public Collection<Film> getFilmsByDirector(
+            @PathVariable Long directorId,
+            @RequestParam String sortBy) {
+        log.info("Get films by director id = {}, sortBy = {}", directorId, sortBy);
+        return filmService.getFilmsByDirector(directorId, sortBy);
+    }
+
     @PostMapping
     public Film postFilm(@Validated(OnCreate.class) @RequestBody Film film) {
         log.info("Post film", film);
