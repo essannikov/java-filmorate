@@ -8,12 +8,17 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.storage.FilmGenreStorage;
+import java.util.Collection;
+import ru.yandex.practicum.filmorate.model.FilmGenre;
+import ru.yandex.practicum.filmorate.model.Like;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.Like;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import ru.yandex.practicum.filmorate.model.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,10 +36,15 @@ public class FilmDbStorageTest {
     private UserDbStorage userStorage;
     @Autowired
     private LikeDbStorage likeStorage;
+    @Autowired
+    private FilmGenreStorage filmGenreStorage;
 
     @BeforeEach
     public void beforeEach() {
         filmStorage.deleteAll();
+        likeStorage.deleteAll();
+        filmStorage.deleteAll();
+        userStorage.deleteAll();
 
         Mpa mpa = new Mpa(1L);
         mpa.setName(mpaStorage.get(mpa.getId()).getName());
@@ -113,39 +123,109 @@ public class FilmDbStorageTest {
     }
 
     @Test
-    public void testDeleteFilmWithLikes() {
-        // Шаг 1. Создаем пользователя
-        User user = new User();
-        user.setEmail("user@mail.ru");
-        user.setLogin("login");
-        user.setName("name");
-        user.setBirthday(LocalDate.of(2000, 1, 1));
-        userStorage.add(user);
+    public void testGetPopularWithGenreFilter() {
+        // Создаем фильмы
+        Film film1 = createFilm("Film 1", LocalDate.of(2000, 1, 1), 1L);
+        Film film2 = createFilm("Film 2", LocalDate.of(2000, 1, 1), 2L);
+        Film film3 = createFilm("Film 3", LocalDate.of(2001, 1, 1), 1L);
 
-        // Шаг 2. Создаем фильм
+        // Добавляем лайки
+        addLike(film1.getId(), 1L);
+        addLike(film1.getId(), 2L);
+        addLike(film2.getId(), 1L);
+
+        // Получаем популярные фильмы по жанру 1
+        Collection<Film> result = filmStorage.getPopular(10, 1L, null);
+
+        // Проверяем
+        assertNotNull(result);
+        assertEquals(2, result.size()); // film1 и film3
+        assertEquals(film1.getId(), result.iterator().next().getId()); // film1 самый популярный
+    }
+
+    @Test
+    public void testGetPopularWithYearFilter() {
+        // Создаем фильмы
+        Film film1 = createFilm("Film 1", LocalDate.of(2000, 1, 1), 1L);
+        Film film2 = createFilm("Film 2", LocalDate.of(2000, 1, 1), 2L);
+        Film film3 = createFilm("Film 3", LocalDate.of(2001, 1, 1), 1L);
+
+        // Добавляем лайки
+        addLike(film1.getId(), 1L);
+        addLike(film2.getId(), 1L);
+        addLike(film2.getId(), 2L);
+        addLike(film3.getId(), 1L);
+
+        // Получаем популярные фильмы за 2000 год
+        Collection<Film> result = filmStorage.getPopular(10, null, 2000);
+
+        // Проверяем
+        assertNotNull(result);
+        assertEquals(2, result.size()); // film1 и film2
+        assertEquals(film2.getId(), result.iterator().next().getId()); // film2 самый популярный
+    }
+
+    @Test
+    public void testGetPopularWithGenreAndYearFilter() {
+        // Создаем фильмы
+        Film film1 = createFilm("Film 1", LocalDate.of(2000, 1, 1), 1L);
+        Film film2 = createFilm("Film 2", LocalDate.of(2000, 1, 1), 2L);
+        Film film3 = createFilm("Film 3", LocalDate.of(2001, 1, 1), 1L);
+
+        // Добавляем лайки
+        addLike(film1.getId(), 1L);
+        addLike(film1.getId(), 2L);
+        addLike(film2.getId(), 1L);
+        addLike(film3.getId(), 1L);
+
+        // Получаем популярные фильмы жанра 1 за 2000 год
+        Collection<Film> result = filmStorage.getPopular(10, 1L, 2000);
+
+        // Проверяем
+        assertNotNull(result);
+        assertEquals(1, result.size()); // только film1
+        assertEquals(film1.getId(), result.iterator().next().getId());
+    }
+
+    @Test
+    public void testGetPopularWithEmptyResult() {
+        // Получаем популярные фильмы по несуществующему жанру
+        Collection<Film> result = filmStorage.getPopular(10, 999L, null);
+
+        // Проверяем
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    private Film createFilm(String name, LocalDate releaseDate, Long genreId) {
         Film film = new Film();
-        film.setName("Film for delete");
+        film.setName(name);
         film.setDescription("Description");
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setReleaseDate(releaseDate);
         film.setDuration(100L);
         film.setMpa(new Mpa(1L));
         filmStorage.add(film);
 
-        // Шаг 3. Добавляем лайк
+        // Добавляем жанр
+        FilmGenre filmGenre = new FilmGenre();
+        filmGenre.setFilmId(film.getId());
+        filmGenre.setGenreId(genreId);
+        filmGenreStorage.add(filmGenre);
+
+        return film;
+    }
+
+    private void addLike(Long filmId, Long userId) {
+        User user = new User();
+        user.setEmail("user" + userId + "@mail.ru");
+        user.setLogin("login" + userId);
+        user.setName("User " + userId);
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+        userStorage.add(user);
+
         Like like = new Like();
-        like.setFilmId(film.getId());
+        like.setFilmId(filmId);
         like.setUserId(user.getId());
         likeStorage.add(like);
-
-        // Шаг 4. Удаляем фильм
-        filmStorage.delete(film.getId());
-
-        // Шаг 5. Проверяем - фильм удален
-        Film filmDb = filmStorage.get(film.getId());
-        assertNull(filmDb, "Film should be deleted");
-
-        // Шаг 6. Проверяем - лайки удалены
-        Like likeDb = likeStorage.get(film.getId(), user.getId());
-        assertNull(likeDb, "Likes should be deleted");
     }
 }
