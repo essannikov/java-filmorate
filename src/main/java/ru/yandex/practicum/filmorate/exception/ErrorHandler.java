@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
 import java.util.HashMap;
@@ -28,10 +29,9 @@ public class ErrorHandler {
         return new ErrorResponse("Возникло исключение.");
     }
 
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNotFound(NotFoundException e) {
-        Map<String, String> response = new HashMap<>();
-        response.put("error", e.getMessage());  // было "description", стало "error"
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleMethodArgumentTypeMismatch(final MethodArgumentTypeMismatchException e) {
+        return new ErrorResponse("Некорректный формат параметра: " + e.getName());
     }
 }
