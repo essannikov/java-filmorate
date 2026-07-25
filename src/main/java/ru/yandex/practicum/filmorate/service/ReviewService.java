@@ -5,11 +5,12 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.*;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.ReviewLikeStorage;
-import ru.yandex.practicum.filmorate.storage.ReviewStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
+import ru.yandex.practicum.filmorate.storage.*;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -24,6 +25,7 @@ public class ReviewService {
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
     private final ReviewLikeStorage reviewLikeStorage;
+    private final FeedStorage feedStorage;
 
     public Collection<Review> getReviewAll() {
         return reviewStorage.getAll();
@@ -50,7 +52,11 @@ public class ReviewService {
         Film film = filmStorage.get(review.getFilmId());
         checkFilm(film, review.getFilmId());
 
-        return reviewStorage.add(review);
+        Review reviewAdd = reviewStorage.add(review);
+        if (reviewAdd != null) {
+            addFeed(reviewAdd.getUserId(), Operation.ADD, reviewAdd.getReviewId());
+        }
+        return reviewAdd;
     }
 
     public Review updateReview(Review newReview) {
@@ -66,6 +72,9 @@ public class ReviewService {
         Review reviewUpdate = reviewStorage.update(newReview);
         checkReview(reviewUpdate, newReview.getReviewId());
 
+        if (reviewUpdate != null) {
+            addFeed(reviewUpdate.getUserId(), Operation.UPDATE, reviewUpdate.getReviewId());
+        }
         return reviewUpdate;
     }
 
@@ -74,7 +83,12 @@ public class ReviewService {
         Review review = reviewStorage.get(id);
         checkReview(review, id);
 
-        return reviewStorage.delete(id) != null;
+        Review reviewDelete = reviewStorage.delete(id);
+        if (reviewDelete != null) {
+            addFeed(reviewDelete.getUserId(), Operation.REMOVE, reviewDelete.getReviewId());
+        }
+
+        return reviewDelete != null;
     }
 
     public boolean addReviewEstimateUseful(Long id, Long userId) {
@@ -153,5 +167,15 @@ public class ReviewService {
         if (film == null) {
             throw new NotFoundException(String.format("Фильм с id = %d не найден", id));
         }
+    }
+
+    protected void addFeed(Long userId, Operation operation, Long entityId) {
+        Feed feed = new Feed();
+        feed.setTimestamp(Timestamp.from(Instant.now()).getTime());
+        feed.setUserId(userId);
+        feed.setEventType(EventType.REVIEW);
+        feed.setOperation(operation);
+        feed.setEntityId(entityId);
+        feedStorage.add(feed);
     }
 }

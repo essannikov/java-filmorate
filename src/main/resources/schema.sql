@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS feeds;
 DROP TABLE IF EXISTS review_like;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS film_genre;
@@ -79,4 +80,13 @@ CREATE TABLE IF NOT EXISTS review_like (
     review_id BIGINT REFERENCES reviews(id) ON DELETE CASCADE,
     user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
     useful TINYINT
+);
+
+CREATE TABLE IF NOT EXISTS feeds (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    timestamp BIGINT NOT NULL,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    event_type VARCHAR(20) NOT NULL,
+    operation VARCHAR(20) NOT NULL,
+    entity_id BIGINT NOT NULL
 );

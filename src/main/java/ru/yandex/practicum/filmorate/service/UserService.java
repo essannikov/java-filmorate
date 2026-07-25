@@ -4,12 +4,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.Friend;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
+import ru.yandex.practicum.filmorate.storage.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.FriendStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,6 +26,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserStorage userStorage;
     private final FriendStorage friendStorage;
+    private final FeedStorage feedStorage;
 
     public Collection<User> getUserAll() {
         return userStorage.getAll();
@@ -45,33 +52,55 @@ public class UserService {
         return userUpdate;
     }
 
+    @Transactional
+    public User deleteUser(Long id) {
+        checkUserId(id);
+        User user = userStorage.get(id);
+        checkUser(user, id);
+
+        friendStorage.deleteFriends(id);
+
+        User deletedUser = userStorage.delete(id);
+        if (deletedUser == null) {
+            throw new NotFoundException(String.format("Не удалось удалить пользователя с id = %d", id));
+        }
+
+        return deletedUser;
+    }
+
     public boolean addFriend(Long id, Long friendId) {
         checkUserId(id);
         checkUserId(friendId);
-
         User user = userStorage.get(id);
         User friendUser = userStorage.get(friendId);
-
         checkUser(user, id);
         checkUser(friendUser, friendId);
 
         Friend friend = new Friend();
         friend.setUserId(id);
         friend.setFriendId(friendId);
-        return friendStorage.add(friend) != null;
+        if (friendStorage.add(friend) == null) {
+            return false;
+        }
+
+        addFeed(id, Operation.ADD, friendId);
+        return true;
     }
 
     public boolean deleteFriend(Long id, Long friendId) {
         checkUserId(id);
         checkUserId(friendId);
-
         User user = userStorage.get(id);
         User friendUser = userStorage.get(friendId);
-
         checkUser(user, id);
         checkUser(friendUser, friendId);
 
-        return friendStorage.delete(id, friendId) != null;
+        if (friendStorage.delete(id, friendId) == null) {
+            return false;
+        }
+
+        addFeed(id, Operation.REMOVE, friendId);
+        return true;
     }
 
     public Collection<User> getFriends(Long id) {
@@ -104,6 +133,10 @@ public class UserService {
         return userFriends;
     }
 
+    public Collection<Feed> getFeeds(Long userId) {
+        return feedStorage.getAllByUserId(userId);
+    }
+
     protected void checkUserId(Long id) {
         if (id == null) {
             throw new ValidationException("Не задан id пользователя");
@@ -116,19 +149,13 @@ public class UserService {
         }
     }
 
-    @Transactional
-    public User deleteUser(Long id) {
-        checkUserId(id);
-        User user = userStorage.get(id);
-        checkUser(user, id);
-
-        friendStorage.deleteFriends(id);
-
-        User deletedUser = userStorage.delete(id);
-        if (deletedUser == null) {
-            throw new NotFoundException(String.format("Не удалось удалить пользователя с id = %d", id));
-        }
-
-        return deletedUser;
+    protected void addFeed(Long userId, Operation operation, Long entityId) {
+        Feed feed = new Feed();
+        feed.setTimestamp(Timestamp.from(Instant.now()).getTime());
+        feed.setUserId(userId);
+        feed.setEventType(EventType.FRIEND);
+        feed.setOperation(operation);
+        feed.setEntityId(entityId);
+        feedStorage.add(feed);
     }
 }

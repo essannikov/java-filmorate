@@ -31,18 +31,19 @@ public class ReviewController {
 
     @PostMapping
     public Review postReview(@Validated(OnCreate.class) @RequestBody Review review) {
-        log.info("Post review", review);
+        log.info("Post review: {}", review);
         return reviewService.addReview(review);
     }
 
     @PutMapping
     public Review putReview(@Validated(OnUpdate.class) @RequestBody Review newReview) {
-        log.info("Put review", newReview);
+        log.info("Put review: {}", newReview);
         return reviewService.updateReview(newReview);
     }
 
     @DeleteMapping("/{id}")
     public boolean deleteReview(@PathVariable Long id) {
+        log.info("Delete review with id = {}", id);
         return reviewService.deleteReview(id);
     }
 
