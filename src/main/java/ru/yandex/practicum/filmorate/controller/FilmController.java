@@ -38,13 +38,13 @@ public class FilmController {
 
     @PostMapping
     public Film postFilm(@Validated(OnCreate.class) @RequestBody Film film) {
-        log.info("Post film", film);
+        log.info("Post film: {}", film);
         return filmService.addFilm(film);
     }
 
     @PutMapping
     public Film putFilm(@Validated(OnUpdate.class) @RequestBody Film newFilm) {
-        log.info("Put film", newFilm);
+        log.info("Put film: {}", newFilm);
         return filmService.updateFilm(newFilm);
     }
 

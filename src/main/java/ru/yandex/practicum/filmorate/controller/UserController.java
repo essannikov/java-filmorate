@@ -6,6 +6,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.check.OnCreate;
 import ru.yandex.practicum.filmorate.check.OnUpdate;
+import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -30,13 +31,13 @@ public class UserController {
 
     @PostMapping
     public User postUser(@Validated(OnCreate.class) @RequestBody User user) {
-        log.info("Post user", user);
+        log.info("Post user: {}", user);
         return userService.addUser(user);
     }
 
     @PutMapping
     public User putUser(@Validated(OnUpdate.class) @RequestBody User newUser) {
-        log.info("Put user", newUser);
+        log.info("Put user: {}", newUser);
         return userService.updateUser(newUser);
     }
 
@@ -67,5 +68,10 @@ public class UserController {
     public User deleteUser(@PathVariable Long userId) {
         log.info("Delete user with id = {}", userId);
         return userService.deleteUser(userId);
+    }
+
+    @GetMapping("/{id}/feed")
+    public Collection<Feed> getFeeds(@PathVariable Long id) {
+        return userService.getFeeds(id);
     }
 }

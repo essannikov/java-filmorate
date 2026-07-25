@@ -5,11 +5,16 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
 import ru.yandex.practicum.filmorate.storage.*;
 import ru.yandex.practicum.filmorate.storage.dal.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.dal.MpaDbStorage;
 
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,7 +40,7 @@ public class FilmService {
     private final GenreDbStorage genreStorage;
     private final DirectorStorage directorStorage;
     private final FilmDirectorStorage filmDirectorStorage;
-
+    private final FeedStorage feedStorage;
 
     public Collection<Film> getFilmsAll() {
         Collection<Film> films = filmStorage.getAll();
@@ -54,6 +59,37 @@ public class FilmService {
         Collection<Film> films = filmStorage.getPopular(limit, genreId, year);
         readGenres(films);
         return films;
+    }
+
+    public Collection<Film> getFilmsByDirector(Long directorId, String sortBy) {
+        if (directorStorage.get(directorId) == null) {
+            throw new NotFoundException(String.format("Режиссер с id = %d не найден", directorId));
+        }
+
+        Collection<Long> filmIds = filmDirectorStorage.getFilmIdsByDirectorId(directorId);
+        if (filmIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Collection<Film> films = filmStorage.getAllInRange(new HashSet<>(filmIds));  // ЭТА СТРОКА
+        readGenres(films);
+        readDirectors(films);
+
+        if ("year".equalsIgnoreCase(sortBy)) {
+            return films.stream()
+                    .sorted(Comparator.comparing(Film::getReleaseDate))
+                    .collect(Collectors.toList());
+        } else if ("likes".equalsIgnoreCase(sortBy)) {
+            return films.stream()
+                    .sorted((f1, f2) -> {
+                        int likes1 = likeStorage.getAll(f1.getId()).size();
+                        int likes2 = likeStorage.getAll(f2.getId()).size();
+                        return Integer.compare(likes2, likes1);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            throw new ValidationException("Некорректный параметр sortBy. Допустимые значения: year, likes");
+        }
     }
 
     public Film getFilm(Long id) {
@@ -110,30 +146,36 @@ public class FilmService {
     public boolean addLike(Long id, Long userId) {
         checkFilmId(id);
         checkUserId(userId);
-
         Film film = filmStorage.get(id);
         User user = userStorage.get(userId);
-
         checkFilm(film, id);
         checkUser(user, userId);
 
         Like like = new Like();
         like.setFilmId(id);
         like.setUserId(userId);
-        return likeStorage.add(like) != null;
+        if (likeStorage.add(like) == null) {
+            return false;
+        }
+
+        addFeed(userId, Operation.ADD, id);
+        return true;
     }
 
     public boolean deleteLike(Long id, Long userId) {
         checkFilmId(id);
         checkUserId(userId);
-
         Film film = filmStorage.get(id);
         User user = userStorage.get(userId);
-
         checkFilm(film, id);
         checkUser(user, userId);
 
-        return likeStorage.delete(id, userId) != null;
+        if (likeStorage.delete(id, userId) == null) {
+            return false;
+        }
+
+        addFeed(userId, Operation.REMOVE, id);
+        return true;
     }
 
     protected void checkFilmId(Long id) {
@@ -271,37 +313,13 @@ public class FilmService {
         filmDirectorStorage.deleteAllByFilmId(film.getId());
     }
 
-    public Collection<Film> getFilmsByDirector(Long directorId, String sortBy) {
-
-        if (directorStorage.get(directorId) == null) {
-            throw new NotFoundException(String.format("Режиссер с id = %d не найден", directorId));
-        }
-
-        Collection<Long> filmIds = filmDirectorStorage.getFilmIdsByDirectorId(directorId);
-
-        if (filmIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        Collection<Film> films = filmStorage.getAllInRange(new HashSet<>(filmIds));  // ЭТА СТРОКА
-
-        readGenres(films);
-        readDirectors(films);
-
-        if ("year".equalsIgnoreCase(sortBy)) {
-            return films.stream()
-                    .sorted(Comparator.comparing(Film::getReleaseDate))
-                    .collect(Collectors.toList());
-        } else if ("likes".equalsIgnoreCase(sortBy)) {
-            return films.stream()
-                    .sorted((f1, f2) -> {
-                        int likes1 = likeStorage.getAll(f1.getId()).size();
-                        int likes2 = likeStorage.getAll(f2.getId()).size();
-                        return Integer.compare(likes2, likes1);
-                    })
-                    .collect(Collectors.toList());
-        } else {
-            throw new ValidationException("Некорректный параметр sortBy. Допустимые значения: year, likes");
-        }
+    protected void addFeed(Long userId, Operation operation, Long entityId) {
+        Feed feed = new Feed();
+        feed.setTimestamp(Timestamp.from(Instant.now()).getTime());
+        feed.setUserId(userId);
+        feed.setEventType(EventType.LIKE);
+        feed.setOperation(operation);
+        feed.setEntityId(entityId);
+        feedStorage.add(feed);
     }
 }
