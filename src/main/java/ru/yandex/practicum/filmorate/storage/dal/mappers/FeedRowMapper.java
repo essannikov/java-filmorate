@@ -8,8 +8,6 @@ import ru.yandex.practicum.filmorate.model.enums.Operation;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 @Component
 public class FeedRowMapper implements RowMapper<Feed> {

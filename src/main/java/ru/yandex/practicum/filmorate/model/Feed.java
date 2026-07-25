@@ -7,8 +7,6 @@ import ru.yandex.practicum.filmorate.check.OnUpdate;
 import ru.yandex.practicum.filmorate.model.enums.EventType;
 import ru.yandex.practicum.filmorate.model.enums.Operation;
 
-import java.time.LocalDateTime;
-
 @Data
 public class Feed {
     @NotNull(groups = {OnUpdate.class})
