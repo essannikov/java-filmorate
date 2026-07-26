@@ -7,11 +7,18 @@ import ru.yandex.practicum.filmorate.storage.LikeStorage;
 import ru.yandex.practicum.filmorate.storage.dal.mappers.LikeRowMapper;
 
 import java.util.Collection;
+import java.util.Set;
 
 @Repository
 public class LikeDbStorage extends BaseDbStorage<Like> implements LikeStorage {
     private static final String FIND_ALL_LIKES_QUERY =
             "SELECT * FROM likes WHERE film_id = ?";
+    private static final String FIND_ALL_BY_USER_ID_QUERY =
+            "SELECT * FROM likes WHERE user_id = ?";
+    private static final String FIND_ALL_IN_RANGE_FILM_ID_QUERY =
+            "SELECT * FROM likes WHERE film_id IN (:idSet)";
+    private static final String FIND_ALL_IN_RANGE_USER_ID_QUERY =
+            "SELECT * FROM likes WHERE user_id IN (:idSet)";
     private static final String FIND_BY_ID_QUERY =
             "SELECT * FROM likes WHERE film_id = ? AND user_id = ?";
     private static final String INSERT_QUERY =
@@ -29,6 +36,21 @@ public class LikeDbStorage extends BaseDbStorage<Like> implements LikeStorage {
     @Override
     public Collection<Like> getAll(Long filmId) {
         return findMany(FIND_ALL_LIKES_QUERY, filmId);
+    }
+
+    @Override
+    public Collection<Like> getAllByUserId(Long userId) {
+        return findMany(FIND_ALL_BY_USER_ID_QUERY, userId);
+    }
+
+    @Override
+    public Collection<Like> getAllInRangeFilmId(Set<Long> idSet) {
+        return findManyInRange(FIND_ALL_IN_RANGE_FILM_ID_QUERY, idSet, "idSet");
+    }
+
+    @Override
+    public Collection<Like> getAllInRangeUserId(Set<Long> idSet) {
+        return findManyInRange(FIND_ALL_IN_RANGE_USER_ID_QUERY, idSet, "idSet");
     }
 
     @Override
