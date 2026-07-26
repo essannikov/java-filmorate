@@ -11,7 +11,6 @@ import java.util.*;
 
 @Repository
 public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
-
     private static final String FIND_BY_ID_QUERY =
             "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME " +
             "FROM films AS f " +
@@ -93,6 +92,11 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     }
 
     @Override
+    public Collection<Film> getAllInRange(Set<Long> idSet) {
+        return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
+    }
+
+    @Override
     public Film get(Long id) {
         return findOne(FIND_BY_ID_QUERY, id).orElse(null);
     }
@@ -127,10 +131,5 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public boolean deleteAll() {
         return deleteAll(DELETE_QUERY_ALL);
-    }
-
-    @Override
-    public Collection<Film> getAllInRange(Set<Long> idSet) {
-        return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
     }
 }

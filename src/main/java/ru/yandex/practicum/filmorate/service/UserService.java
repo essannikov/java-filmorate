@@ -4,21 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Feed;
-import ru.yandex.practicum.filmorate.model.Friend;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.model.enums.EventType;
 import ru.yandex.practicum.filmorate.model.enums.Operation;
-import ru.yandex.practicum.filmorate.storage.FeedStorage;
-import ru.yandex.practicum.filmorate.storage.FriendStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +21,8 @@ public class UserService {
     private final UserStorage userStorage;
     private final FriendStorage friendStorage;
     private final FeedStorage feedStorage;
+    private final LikeStorage likeStorage;
+    private final FilmStorage filmStorage;
 
     public Collection<User> getUserAll() {
         return userStorage.getAll();
@@ -135,6 +131,45 @@ public class UserService {
 
     public Collection<Feed> getFeeds(Long userId) {
         return feedStorage.getAllByUserId(userId);
+    }
+
+    public Collection<Film> getRecommendations(Long userId) {
+        checkUserId(userId);
+        User user = userStorage.get(userId);
+        checkUser(user, userId);
+
+        Set<Long> userFilms = likeStorage.getAllByUserId(userId).stream().map(Like::getFilmId).collect(Collectors.toSet());
+        if (userFilms.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> similarUsers = likeStorage.getAllInRangeFilmId(userFilms).stream().map(Like::getUserId).collect(Collectors.toSet());
+
+        Map<Long, Set<Long>> likes = likeStorage.getAllInRangeUserId(similarUsers).stream()
+                .collect(Collectors.groupingBy(Like::getUserId,
+                        Collectors.mapping(Like::getFilmId, Collectors.toSet())));
+
+        Optional<Map.Entry<Long, Integer>> similar = likes.entrySet().stream()
+                .filter(e -> !e.getKey().equals(userId))
+                .map(e -> {
+                    Set<Long> intersection = new HashSet<>(e.getValue());
+                    intersection.retainAll(userFilms);
+                    return Map.entry(e.getKey(), intersection.size()); })
+                .filter(e -> e.getValue() > 0)
+                .max(Comparator.comparingInt(Map.Entry::getValue));
+        if (similar.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> similarFilms = likes.get(similar.get().getKey());
+
+        Set<Long> filmIdRecommendations = similarFilms.stream()
+                .filter(f -> !userFilms.contains(f)).collect(Collectors.toSet());
+        if (filmIdRecommendations.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return filmStorage.getAllInRange(filmIdRecommendations);
     }
 
     protected void checkUserId(Long id) {
