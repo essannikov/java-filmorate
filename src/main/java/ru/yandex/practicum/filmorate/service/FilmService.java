@@ -44,6 +44,22 @@ public class FilmService {
         return films;
     }
 
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
+        checkUserId(userId);
+        checkUserId(friendId);
+
+        User user = userStorage.get(userId);
+        User friend = userStorage.get(friendId);
+
+        checkUser(user, userId);
+        checkUser(friend, friendId);
+
+        Collection<Film> films = filmStorage.getCommon(userId, friendId);
+        readGenres(films);
+
+        return films;
+    }
+
     public Film getFilm(Long id) {
         checkFilmId(id);
         Film film = filmStorage.get(id);

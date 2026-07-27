@@ -9,6 +9,8 @@ public interface FilmStorage {
 
     public Collection<Film> getPopular(Integer count);
 
+    public Collection<Film> getCommon(Long userId, Long friendId);
+
     public Film get(Long id);
 
     public Film add(Film film);
