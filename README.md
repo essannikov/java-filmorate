@@ -1,9 +1,9 @@
 # Проект "Социальная сеть для оценки фильмов" 
 
 Модель данных состоит из:  
-таблиц: users, films,  
+таблиц: users, films, reviews, feeds, directors  
 справочников: mpa, genres  
-таблиц связей: friends, likes, film_genre.
+таблиц связей: friends, likes, film_genre, review_like, film_director.
 
 ![ER модель](Schema.png)
 

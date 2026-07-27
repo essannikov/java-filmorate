@@ -6,6 +6,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.check.OnCreate;
 import ru.yandex.practicum.filmorate.check.OnUpdate;
+import ru.yandex.practicum.filmorate.model.Feed;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -30,13 +32,13 @@ public class UserController {
 
     @PostMapping
     public User postUser(@Validated(OnCreate.class) @RequestBody User user) {
-        log.info("Post user", user);
+        log.info("Post user: {}", user);
         return userService.addUser(user);
     }
 
     @PutMapping
     public User putUser(@Validated(OnUpdate.class) @RequestBody User newUser) {
-        log.info("Put user", newUser);
+        log.info("Put user: {}", newUser);
         return userService.updateUser(newUser);
     }
 
@@ -61,5 +63,21 @@ public class UserController {
     public Collection<User> getCommonFriends(@PathVariable Long id,
                                        @PathVariable Long otherId) {
         return userService.getCommonFriends(id, otherId);
+    }
+
+    @DeleteMapping("/{userId}")
+    public User deleteUser(@PathVariable Long userId) {
+        log.info("Delete user with id = {}", userId);
+        return userService.deleteUser(userId);
+    }
+
+    @GetMapping("/{id}/feed")
+    public Collection<Feed> getFeeds(@PathVariable Long id) {
+        return userService.getFeeds(id);
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public Collection<Film> getRecommendations(@PathVariable Long id) {
+        return userService.getRecommendations(id);
     }
 }
