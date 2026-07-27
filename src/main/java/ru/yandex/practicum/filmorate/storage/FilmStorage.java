@@ -8,7 +8,9 @@ import java.util.Set;
 public interface FilmStorage {
     public Collection<Film> getAll();
 
-    public Collection<Film> getPopular(Integer count);
+    public Collection<Film> getPopular(Integer count, Long genreId, Integer year);
+
+    public Collection<Film> getAllInRange(Set<Long> idSet);
 
     public Collection<Film> search(String query, Set<String> by);
 
@@ -21,4 +23,5 @@ public interface FilmStorage {
     public Film delete(Long id);
 
     public boolean deleteAll();
+
 }
