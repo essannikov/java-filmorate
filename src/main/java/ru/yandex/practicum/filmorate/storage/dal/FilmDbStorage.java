@@ -30,6 +30,15 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                     "GROUP BY f.ID , f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME " +
                     "ORDER BY COUNT(ls.USER_ID) DESC " +
                     "LIMIT ?";
+    private static final String FIND_COMMON_QUERY =
+            "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME, COUNT(ls.USER_ID) AS count_likes " +
+                    "FROM films AS f " +
+                    "INNER JOIN likes AS l1 ON l1.FILM_ID = f.ID AND l1.USER_ID = ? " +
+                    "INNER JOIN likes AS l2 ON l2.FILM_ID = f.ID AND l2.USER_ID = ? " +
+                    "LEFT OUTER JOIN mpa AS m ON m.ID = f.MPA_ID " +
+                    "LEFT OUTER JOIN likes AS ls ON ls.FILM_ID = f.ID " +
+                    "GROUP BY f.ID , f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME " +
+                    "ORDER BY COUNT(ls.USER_ID) DESC ";
     private static final String INSERT_QUERY =
             "INSERT INTO films(name, description, release_date, duration, mpa_id) " +
             "VALUES (?, ?, ?, ?, ?)";
@@ -94,6 +103,11 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public Collection<Film> getAllInRange(Set<Long> idSet) {
         return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
+    }
+
+    @Override
+    public Collection<Film> getCommon(Long userId, Long friendId) {
+        return findMany(FIND_COMMON_QUERY, userId, friendId);
     }
 
     @Override
