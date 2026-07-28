@@ -70,8 +70,13 @@ public class FilmService {
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
+        if (!criteria.contains("title") && !criteria.contains("director")) {
+            throw new ValidationException("Некорректный параметр by. Допустимые значения: title, director");
+        }
+
         Collection<Film> films = filmStorage.search(query, criteria);
         readGenres(films);
+        readDirectors(films);
 
         return films;
     }

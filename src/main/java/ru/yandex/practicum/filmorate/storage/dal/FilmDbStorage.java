@@ -108,9 +108,20 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     public Collection<Film> search(String query, Set<String> by) {
         List<String> conditions = new ArrayList<>();
         List<Object> params = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(SEARCH_BASE_QUERY);
+
+        if (by.contains("director")) {
+            sql.append("LEFT OUTER JOIN film_director AS fd ON fd.film_id = f.id ");
+            sql.append("LEFT OUTER JOIN directors AS d ON d.id = fd.director_id ");
+        }
 
         if (by.contains("title")) {
             conditions.add("LOWER(f.NAME) LIKE LOWER(CONCAT('%', ?, '%'))");
+            params.add(query);
+        }
+
+        if (by.contains("director")) {
+            conditions.add("LOWER(d.NAME) LIKE LOWER(CONCAT('%', ?, '%'))");
             params.add(query);
         }
 
@@ -118,11 +129,10 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
             return List.of();
         }
 
-        String sql = SEARCH_BASE_QUERY +
-                "WHERE " + String.join(" OR ", conditions) + " " +
-                SEARCH_GROUP_ORDER;
+        sql.append("WHERE ").append(String.join(" OR ", conditions)).append(" ");
+        sql.append(SEARCH_GROUP_ORDER);
 
-        return findMany(sql, params.toArray());
+        return findMany(sql.toString(), params.toArray());
     }
 
     @Override
