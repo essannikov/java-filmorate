@@ -60,6 +60,27 @@ public class FilmService {
         return films;
     }
 
+    public Collection<Film> searchFilms(String query, String by) {
+        if (query == null || query.isBlank()) {
+            throw new ValidationException("Не задан текст для поиска");
+        }
+
+        Set<String> criteria = Arrays.stream(by.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        if (!criteria.contains("title") && !criteria.contains("director")) {
+            throw new ValidationException("Некорректный параметр by. Допустимые значения: title, director");
+        }
+
+        Collection<Film> films = filmStorage.search(query, criteria);
+        readGenres(films);
+        readDirectors(films);
+
+        return films;
+    }
+
     public Collection<Film> getCommonFilms(Long userId, Long friendId) {
         checkUserId(userId);
         checkUserId(friendId);

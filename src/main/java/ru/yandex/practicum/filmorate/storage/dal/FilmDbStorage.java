@@ -30,6 +30,14 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                     "GROUP BY f.ID , f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME " +
                     "ORDER BY COUNT(ls.USER_ID) DESC " +
                     "LIMIT ?";
+    private static final String SEARCH_BASE_QUERY =
+            "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME, COUNT(ls.USER_ID) AS count_likes " +
+                    "FROM films AS f " +
+                    "LEFT OUTER JOIN mpa AS m ON m.ID = f.MPA_ID " +
+                    "LEFT OUTER JOIN likes AS ls ON ls.FILM_ID = f.ID ";
+    private static final String SEARCH_GROUP_ORDER =
+            "GROUP BY f.ID , f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME " +
+                    "ORDER BY COUNT(ls.USER_ID) DESC ";
     private static final String FIND_COMMON_QUERY =
             "SELECT f.ID, f.NAME, f.DESCRIPTION, f.RELEASE_DATE, f.DURATION, f.MPA_ID, m.NAME AS MPA_NAME, COUNT(ls.USER_ID) AS count_likes " +
                     "FROM films AS f " +
@@ -103,6 +111,37 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public Collection<Film> getAllInRange(Set<Long> idSet) {
         return findManyInRange(FIND_ALL_IN_RANGE_QUERY, idSet, "idSet");
+    }
+
+    @Override
+    public Collection<Film> search(String query, Set<String> by) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(SEARCH_BASE_QUERY);
+
+        if (by.contains("director")) {
+            sql.append("LEFT OUTER JOIN film_director AS fd ON fd.film_id = f.id ");
+            sql.append("LEFT OUTER JOIN directors AS d ON d.id = fd.director_id ");
+        }
+
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.NAME) LIKE LOWER(CONCAT('%', ?, '%'))");
+            params.add(query);
+        }
+
+        if (by.contains("director")) {
+            conditions.add("LOWER(d.NAME) LIKE LOWER(CONCAT('%', ?, '%'))");
+            params.add(query);
+        }
+
+        if (conditions.isEmpty()) {
+            return List.of();
+        }
+
+        sql.append("WHERE ").append(String.join(" OR ", conditions)).append(" ");
+        sql.append(SEARCH_GROUP_ORDER);
+
+        return findMany(sql.toString(), params.toArray());
     }
 
     @Override

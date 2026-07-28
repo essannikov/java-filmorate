@@ -12,6 +12,8 @@ public interface FilmStorage {
 
     public Collection<Film> getAllInRange(Set<Long> idSet);
 
+    public Collection<Film> search(String query, Set<String> by);
+
     public Collection<Film> getCommon(Long userId, Long friendId);
 
     public Film get(Long id);
