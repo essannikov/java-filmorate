@@ -23,7 +23,7 @@ public class ReviewDbStorage extends BaseDbStorage<Review> implements ReviewStor
                     "FROM reviews AS r " +
                     "LEFT OUTER JOIN review_like AS rl ON rl.REVIEW_ID = r.ID " +
                     "GROUP BY r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID " +
-                    "ORDER BY SUM(rl.USEFUL) DESC ";
+                    "ORDER BY useful DESC ";
     private static final String FIND_ALL_BY_FILM_ID =
             "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, " +
                     "COALESCE(SUM(rl.USEFUL), 0) AS useful " +
@@ -31,8 +31,16 @@ public class ReviewDbStorage extends BaseDbStorage<Review> implements ReviewStor
                     "LEFT OUTER JOIN review_like AS rl ON rl.REVIEW_ID = r.ID " +
                     "WHERE (? IS NULL OR r.FILM_ID = ?) " +
                     "GROUP BY r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID " +
-                    "ORDER BY SUM(rl.USEFUL) DESC " +
+                    "ORDER BY useful DESC " +
                     "LIMIT ?";
+    private static final String FIND_BY_FILM_ID_USER_ID =
+            "SELECT r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID, " +
+                    "COALESCE(SUM(rl.USEFUL), 0) AS useful " +
+                    "FROM reviews AS r " +
+                    "LEFT OUTER JOIN review_like AS rl ON rl.REVIEW_ID = r.ID " +
+                    "WHERE r.FILM_ID = ? AND r.USER_ID = ? " +
+                    "GROUP BY r.ID, r.CONTENT, r.IS_POSITIVE, r.USER_ID, r.FILM_ID " +
+                    "ORDER BY useful DESC ";
     private static final String INSERT_QUERY =
             "INSERT INTO reviews(content, is_positive, user_id, film_id) " +
                     "VALUES (?, ?, ?, ?)";
@@ -56,6 +64,11 @@ public class ReviewDbStorage extends BaseDbStorage<Review> implements ReviewStor
     @Override
     public Collection<Review> getAllByFilmId(Long filmId, Integer count) {
         return findMany(FIND_ALL_BY_FILM_ID, filmId, filmId, count);
+    }
+
+    @Override
+    public Review getByFilmIdUserId(Long filmId, Long userId) {
+        return findOne(FIND_BY_FILM_ID_USER_ID, filmId, userId).orElse(null);
     }
 
     @Override

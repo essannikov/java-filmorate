@@ -9,6 +9,8 @@ public interface ReviewStorage {
 
     public Collection<Review> getAllByFilmId(Long filmId, Integer count);
 
+    public Review getByFilmIdUserId(Long filmId, Long userId);
+
     public Review get(Long id);
 
     public Review add(Review review);

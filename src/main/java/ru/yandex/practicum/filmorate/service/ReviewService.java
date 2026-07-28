@@ -52,6 +52,9 @@ public class ReviewService {
         Film film = filmStorage.get(review.getFilmId());
         checkFilm(film, review.getFilmId());
 
+        Review reviewExist = reviewStorage.getByFilmIdUserId(review.getFilmId(), review.getUserId());
+        checkReviewExist(reviewExist);
+
         Review reviewAdd = reviewStorage.add(review);
         if (reviewAdd != null) {
             addFeed(reviewAdd.getUserId(), Operation.ADD, reviewAdd.getReviewId());
@@ -69,10 +72,12 @@ public class ReviewService {
         checkFilm(film, newReview.getFilmId());
 
         checkReviewId(newReview.getReviewId());
-        Review reviewUpdate = reviewStorage.update(newReview);
+        Review reviewUpdate = reviewStorage.get(newReview.getReviewId());
         checkReview(reviewUpdate, newReview.getReviewId());
+        reviewUpdate.setContent(newReview.getContent());
+        reviewUpdate.setIsPositive(newReview.getIsPositive());
 
-        if (reviewUpdate != null) {
+        if (reviewStorage.update(reviewUpdate) != null) {
             addFeed(reviewUpdate.getUserId(), Operation.UPDATE, reviewUpdate.getReviewId());
         }
         return reviewUpdate;
@@ -154,6 +159,13 @@ public class ReviewService {
     protected void checkReview(Review review, Long id) {
         if (review == null) {
             throw new NotFoundException(String.format("Отзыв с id = %d не найден", id));
+        }
+    }
+
+    protected void checkReviewExist(Review review) {
+        if (review != null) {
+            throw new ValidationException(String.format("Отзыв для фильма с id = %d, пользователя с id = %d, уже существует",
+                    review.getFilmId(), review.getUserId()));
         }
     }
 

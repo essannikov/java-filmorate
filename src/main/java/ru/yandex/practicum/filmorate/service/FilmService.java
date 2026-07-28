@@ -57,6 +57,7 @@ public class FilmService {
 
         Collection<Film> films = filmStorage.getPopular(limit, genreId, year);
         readGenres(films);
+        readDirectors(films);
         return films;
     }
 
@@ -93,6 +94,7 @@ public class FilmService {
 
         Collection<Film> films = filmStorage.getCommon(userId, friendId);
         readGenres(films);
+        readDirectors(films);
 
         return films;
     }
@@ -146,7 +148,9 @@ public class FilmService {
 
         film = filmStorage.add(film);
         updateGenres(film);
+        readGenres(List.of(film));
         updateDirectors(film);
+        readDirectors(List.of(film));
 
         return film;
     }
@@ -161,7 +165,10 @@ public class FilmService {
 
         deleteGenres(newFilm);
         updateGenres(newFilm);
+        readGenres(List.of(newFilm));
+        deleteDirectors(newFilm);
         updateDirectors(newFilm);
+        readDirectors(List.of(newFilm));
 
         return newFilm;
     }
@@ -190,8 +197,10 @@ public class FilmService {
         Like like = new Like();
         like.setFilmId(id);
         like.setUserId(userId);
-        if (likeStorage.add(like) == null) {
-            return false;
+        if (likeStorage.get(id, userId) == null) {
+            if (likeStorage.add(like) == null) {
+                return false;
+            }
         }
 
         addFeed(userId, Operation.ADD, id);
