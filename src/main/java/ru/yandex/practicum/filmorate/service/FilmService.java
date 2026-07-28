@@ -81,6 +81,22 @@ public class FilmService {
         return films;
     }
 
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
+        checkUserId(userId);
+        checkUserId(friendId);
+
+        User user = userStorage.get(userId);
+        User friend = userStorage.get(friendId);
+
+        checkUser(user, userId);
+        checkUser(friend, friendId);
+
+        Collection<Film> films = filmStorage.getCommon(userId, friendId);
+        readGenres(films);
+
+        return films;
+    }
+
     public Collection<Film> getFilmsByDirector(Long directorId, String sortBy) {
         if (directorStorage.get(directorId) == null) {
             throw new NotFoundException(String.format("Режиссер с id = %d не найден", directorId));
